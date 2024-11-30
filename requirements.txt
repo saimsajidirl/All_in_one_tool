@@ -1,0 +1,7 @@
+streamlit
+Pillow
+pdf2docx
+PyPDF2
+reportlab
+comtypes
+pywin32
