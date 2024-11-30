@@ -12,7 +12,7 @@ import pythoncom
 
 st.set_page_config(
     page_title="All in one Tool",
-    page_icon="images/logo.jpg",  # Path to your favicon file
+    page_icon="logo.jpg",  
     layout="centered"
 )
 def convert_png_to_ico(png_file):
@@ -55,16 +55,13 @@ def convert_pdf_to_word(pdf_file):
 def convert_ppt_to_pdf(ppt_file):
     """Convert PowerPoint to PDF file"""
     try:
-        # Create a temporary file for the PowerPoint
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pptx', prefix='temp_') as temp_ppt:
             temp_ppt.write(ppt_file.getvalue())
             temp_ppt_path = temp_ppt.name
 
-        # Create a temporary file for the PDF
         original_filename = os.path.splitext(ppt_file.name)[0]
         temp_pdf_path = os.path.join(tempfile.gettempdir(), f'{original_filename}.pdf')
 
-        # Use win32com to convert PPT to PDF
         pythoncom.CoInitialize()
         powerpoint = win32com.client.Dispatch("Powerpoint.Application")
 
@@ -76,7 +73,6 @@ def convert_ppt_to_pdf(ppt_file):
             powerpoint.Quit()
             pythoncom.CoUninitialize()
 
-        # Clean up temporary PPT file
         os.unlink(temp_ppt_path)
 
         return temp_pdf_path, f"{original_filename}.pdf"
@@ -166,17 +162,13 @@ def convert_images_to_pdf(image_files):
 def convert_jpg_to_png(jpg_file):
     """Convert JPG to PNG file"""
     try:
-        # Open the JPG image
         img = Image.open(jpg_file)
 
-        # Create a temporary file for the PNG
         original_filename = os.path.splitext(jpg_file.name)[0]
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png', prefix=f'{original_filename}_') as temp_png:
-            # Ensure image is in RGB mode
             if img.mode != 'RGB':
                 img = img.convert('RGB')
 
-            # Save the image as PNG
             img.save(temp_png.name, format='PNG')
 
         return temp_png.name, f"{original_filename}.png"
