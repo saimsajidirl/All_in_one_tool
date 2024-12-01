@@ -7,10 +7,8 @@ from PyPDF2 import PdfMerger
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
-import sys
-import comtypes.client
-from moviepy import VideoFileClip
 import subprocess
+from moviepy import VideoFileClip
 
 st.set_page_config(
     page_title="All in one Tool",
@@ -152,41 +150,18 @@ def convert_jpg_to_png(jpg_file):
 
 
 def convert_ppt_to_pdf(ppt_file):
-    """Convert PPT to PDF"""
+    """Convert PPT to PDF using LibreOffice"""
     try:
-        if sys.platform == "win32":  # Windows-specific code
-            comtypes.CoInitialize()
+        # Save the PPT file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pptx') as temp_ppt:
+            temp_ppt.write(ppt_file.getvalue())
+            temp_ppt.close()
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pptx') as temp_ppt:
-                temp_ppt.write(ppt_file.getvalue())
-                temp_ppt.close()
+            # Use LibreOffice in headless mode to convert the PPTX file to PDF
+            pdf_path = temp_ppt.name.replace('.pptx', '.pdf')
+            subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', temp_ppt.name], check=True)
 
-                powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
-                powerpoint.Visible = 1
-                ppt = powerpoint.Presentations.Open(temp_ppt.name)
-
-                pdf_path = temp_ppt.name.replace('.pptx', '.pdf')
-                ppt.SaveAs(pdf_path, 32)
-
-                ppt.Close()
-                powerpoint.Quit()
-
-            comtypes.CoUninitialize()
-            return pdf_path, "converted_presentation.pdf"
-
-        else:  # For Unix systems (Linux/macOS)
-            # Run LibreOffice in headless mode
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pptx') as temp_ppt:
-                temp_ppt.write(ppt_file.getvalue())
-                temp_ppt.close()
-
-                output_pdf_path = temp_ppt.name.replace('.pptx', '.pdf')
-
-                # Use LibreOffice to convert the PPTX to PDF
-                subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', temp_ppt.name])
-
-            return output_pdf_path, "converted_presentation.pdf"
-
+        return pdf_path, "converted_presentation.pdf"
     except Exception as e:
         st.error(f"Error converting PPT to PDF: {e}")
         return None, None
