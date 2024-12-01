@@ -3,5 +3,7 @@ Pillow
 pdf2docx
 PyPDF2
 reportlab
-comtypes
 moviepy
+comtypes
+subprocess
+python-pptx
