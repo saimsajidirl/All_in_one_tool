@@ -4,6 +4,5 @@ pdf2docx
 PyPDF2
 reportlab
 moviepy
-comtypes
 subprocess
 python-pptx
