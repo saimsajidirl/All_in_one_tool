@@ -1,7 +1,7 @@
-streamlit==1.20.0
-Pillow==9.5.0
-pdf2docx==0.5.6
-PyPDF2==3.0.0
-reportlab==3.6.0
-comtypes==1.1.10
-pywin32==305
+streamlit
+Pillow
+pdf2docx
+PyPDF2
+reportlab
+comtypes
+moviepy
