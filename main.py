@@ -5,7 +5,7 @@ from PyPDF2 import PdfMerger
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
-from moviepy import VideoFileClip
+from moviepy.editor import VideoFileClip
 import os
 import tempfile
 
