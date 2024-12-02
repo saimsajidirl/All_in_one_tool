@@ -1,14 +1,15 @@
 import streamlit as st
-import os
-import tempfile
 from PIL import Image
 from pdf2docx import Converter
 from PyPDF2 import PdfMerger
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
-import subprocess
 from moviepy import VideoFileClip
+import os
+import tempfile
+import subprocess
+import platform
 
 st.set_page_config(
     page_title="All in one Tool",
@@ -149,24 +150,6 @@ def convert_jpg_to_png(jpg_file):
         return None, None
 
 
-def convert_ppt_to_pdf(ppt_file):
-    """Convert PPT to PDF using LibreOffice"""
-    try:
-        # Save the PPT file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pptx') as temp_ppt:
-            temp_ppt.write(ppt_file.getvalue())
-            temp_ppt.close()
-
-            # Use LibreOffice in headless mode to convert the PPTX file to PDF
-            pdf_path = temp_ppt.name.replace('.pptx', '.pdf')
-            subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', temp_ppt.name], check=True)
-
-        return pdf_path, "converted_presentation.pdf"
-    except Exception as e:
-        st.error(f"Error converting PPT to PDF: {e}")
-        return None, None
-
-
 def convert_mp4_to_mp3(mp4_file):
     """Convert MP4 to MP3 file"""
     try:
@@ -188,12 +171,84 @@ def convert_mp4_to_mp3(mp4_file):
         return None, None
 
 
+def convert_ppt_to_pdf(ppt_file):
+    """Convert PPT/PPTX to PDF using LibreOffice"""
+    try:
+        # Create temporary files
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.ppt') as temp_ppt, \
+                tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
+
+            # Write uploaded file to temporary PPT file
+            temp_ppt.write(ppt_file.getvalue())
+            temp_ppt.close()
+
+            # Determine the LibreOffice command based on the operating system
+            system = platform.system()
+
+            if system == "Windows":
+                libreoffice_cmd = [
+                    "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    os.path.dirname(temp_pdf.name),
+                    temp_ppt.name
+                ]
+            elif system == "Darwin":  # macOS
+                libreoffice_cmd = [
+                    "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+                    "--headless",
+                    "-- convert-to",
+                    "pdf",
+                    "--outdir",
+                    os.path.dirname(temp_pdf.name),
+                    temp_ppt.name
+                ]
+            elif system == "Linux":
+                libreoffice_cmd = [
+                    "libreoffice",
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    os.path.dirname(temp_pdf.name),
+                    temp_ppt.name
+                ]
+            else:
+                raise OSError("Unsupported operating system")
+
+            # Run LibreOffice conversion
+            result = subprocess.run(libreoffice_cmd, capture_output=True, text=True)
+
+            # Check if conversion was successful
+            if result.returncode != 0:
+                st.error(f"Conversion failed: {result.stderr}")
+                return None, None
+
+            # Generate output filename
+            original_filename = os.path.splitext(ppt_file.name)[0]
+            pdf_filename = f"{original_filename}.pdf"
+
+            # Find the generated PDF file
+            generated_pdf_path = os.path.join(
+                os.path.dirname(temp_pdf.name),
+                os.path.basename(temp_ppt.name).rsplit('.', 1)[0] + '.pdf'
+            )
+
+            return generated_pdf_path, pdf_filename
+
+    except Exception as e:
+        st.error(f"Error converting PPT to PDF: {e}")
+        return None, None
+
+
 def main():
     st.title("All in one Tool from Muhammad Saim")
 
     menu = st.sidebar.radio("Select Conversion", ["PNG to ICO", "PDF to Word", "Merge PDFs",
-                                                  "Images to PDF", "JPG to PNG", "PPT to PDF",
-                                                  "MP4 to MP3"])  # Added new conversion option
+                                                  "Images to PDF", "JPG to PNG", "MP4 to MP3",
+                                                  "PPT to PDF"])  # Added PPT to PDF
 
     if menu == "PNG to ICO":
         st.header("PNG to ICO Converter")
@@ -256,12 +311,26 @@ def main():
                 if png_path:
                     with open(png_path, 'rb') as f:
                         png_bytes = f.read()
-                    st.download_button(label="Download PNG", data=png_bytes, file_name=png_filename, mime="image/png")
+                    st.download_button(label="Download PNG", data=png_bytes, file_name=png_filename,
+                                       mime="image/png")
                     os.unlink(png_path)
+
+    elif menu == "MP4 to MP3":
+        st.header("MP4 to MP3 Converter")
+        mp4_file = st.file_uploader("Upload MP4 file", type=['mp4'])
+        if mp4_file is not None:
+            if st.button("Convert to MP3"):
+                mp3_path, mp3_filename = convert_mp4_to_mp3(mp4_file)
+                if mp3_path:
+                    with open(mp3_path, 'rb') as f:
+                        mp3_bytes = f.read()
+                    st.download_button(label="Download MP3", data=mp3_bytes, file_name=mp3_filename,
+                                       mime="audio/mpeg")
+                    os.unlink(mp3_path)
 
     elif menu == "PPT to PDF":
         st.header("PPT to PDF Converter")
-        ppt_file = st.file_uploader("Upload PPT file", type=['ppt', 'pptx'])
+        ppt_file = st.file_uploader("Upload PPT/PPTX file", type=['ppt', 'pptx'])
         if ppt_file is not None:
             if st.button("Convert to PDF"):
                 pdf_path, pdf_filename = convert_ppt_to_pdf(ppt_file)
@@ -271,19 +340,6 @@ def main():
                     st.download_button(label="Download PDF", data=pdf_bytes, file_name=pdf_filename,
                                        mime="application/pdf")
                     os.unlink(pdf_path)
-
-    elif menu == "MP4 to MP3":
-        st.header("MP4 to MP3 Converter")
-        mp4_file = st.file_uploader("Upload MP4 file", type=['mp4'])
-        if mp4_file is not None:
-            st.video(mp4_file)
-            if st.button("Convert to MP3"):
-                mp3_path, mp3_filename = convert_mp4_to_mp3(mp4_file)
-                if mp3_path:
-                    with open(mp3_path, 'rb') as f:
-                        mp3_bytes = f.read()
-                    st.download_button(label="Download MP3", data=mp3_bytes, file_name=mp3_filename, mime="audio/mpeg")
-                    os.unlink(mp3_path)
 
 
 if __name__ == "__main__":
