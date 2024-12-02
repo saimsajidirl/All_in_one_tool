@@ -3,8 +3,6 @@ Pillow
 pdf2docx
 PyPDF2
 reportlab
+comtypes
 moviepy
-subprocess32
-libreoffice
-opencv-python-headless
-numpy
+pptxtopdf
